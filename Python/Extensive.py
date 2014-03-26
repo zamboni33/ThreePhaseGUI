@@ -43,26 +43,110 @@ class DataGen(object):
         display in the plot.
     """
     def __init__(self, init=50):
-        self.data = self.init = init
-        self.rpm = 0
-        self.freq = 0
-        
-    def next(self, sliderValue):
-        self.data = sliderValue
-        return self.data
-        
-    def nextFreq(self, sliderValue):
-        self.data = sliderValue
-        #~ self.data = float(sliderValue)/100.0 * 80
-        return self.data
-        
-    def nextSlip(self, sliderValue):
-        self.data = sliderValue
-        self.rpm = (120.0 * self.freq) / 3.0
-        return self.data
-    
-        
 
+        self.deltaSlip = 100.0
+        self.rpm = 0
+        self.stable = True
+        self.load = 0
+        self.freq = 0
+        self.slip = 100
+        self.speed = 0
+        self.up = True
+        
+    def next(self, newLoad, oldLoad):
+        if newLoad == 0:
+            # Reset the system
+            self.load = newLoad
+            self.freq = 0
+            self.slip = 100
+            self.speed = 0
+        else:
+            self.load = newLoad
+            if (newLoad - oldLoad) > 0 and self.freq < 80:
+                # Monitor Slip
+                self.up = True
+                self.freq += 2
+                desiredFreq = (newLoad * 0.6) + 20
+                self.rpm = ((120.0 * desiredFreq) / 3.0)
+                self.speed = ((120.0 * self.freq) / 3.0)
+                self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+                if self.slip < 0:
+                    self.slip = 0
+                if self.slip < 5:
+                    self.stable = True
+                else:
+                    self.stable = False
+            
+            elif (newLoad - oldLoad) < 0 and self.freq < 80:
+                self.up = False
+                self.freq -= 2
+                desiredFreq = (newLoad * 0.6) + 20
+                self.rpm = ((120.0 * desiredFreq) / 3.0)
+                self.speed = ((120.0 * self.freq) / 3.0)
+                self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+                if self.slip < 0:
+                    self.slip = 0
+                if self.slip < 5:
+                    self.stable = True
+                else:
+                    self.stable = False                
+            
+            else:
+               if self.stable == False:
+                    # Monitor Slip
+                    if self.up == True:
+                        self.freq += 2
+                        desiredFreq = (newLoad * 0.6) + 20
+                        self.rpm = ((120.0 * desiredFreq) / 3.0)
+                        self.speed = ((120.0 * self.freq) / 3.0)
+                        self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+                        if self.slip < 0:
+                            self.slip = 0                    
+                        if self.slip < 5:
+                            self.stable = True
+                        else:
+                            self.stable = False
+                    else:
+                        self.freq += 2
+                        desiredFreq = (newLoad * 0.6) + 20
+                        self.rpm = ((120.0 * desiredFreq) / 3.0)
+                        self.speed = ((120.0 * self.freq) / 3.0)
+                        self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+                        if self.slip < 0:
+                            self.slip = 0                    
+                        if self.slip < 5:
+                            self.stable = True
+                        else:
+                            self.stable = False                        
+                    
+                
+        
+    
+    #~ def nextFreq(self, slipValue, currentSpeed, freqValue, loadValue):
+        #~ if slipValue > 5 and self.deltaSlip > 1.0:
+            #~ if freqValue > 200:
+                #~ freqValue = 200
+            #~ else:
+                #~ freqValue += 2        
+        #~ return freqValue
+        #~ 
+    #~ def nextSlip(self, slipValue, currentSpeed, freqValue, loadValue):
+        #~ if loadValue == 0:
+            #~ slipValue = 100
+        #~ else:
+            #~ self.rpm = (120.0 * freqValue) / 3.0
+            #~ temp = slipValue
+            #~ slipValue = ((self.rpm - currentSpeed) / self.rpm ) * 100
+            #~ self.deltaSlip = abs(temp - slipValue)
+        #~ return slipValue
+#~ 
+    #~ def nextSpeed(self, slipValue, currentSpeed, freqValue, loadValue):
+        #~ if loadValue == 0:
+            #~ currentSpeed = (((120.0 * freqValue) / 3.0) * 0.95)
+        #~ else:
+            #~ currentSpeed = (((120.0 * freqValue) / 3.0) * 0.95)
+            #~ currentSpeed -= (currentSpeed * 0.10) * (1 - (loadValue / 100))
+        #~ return currentSpeed
 
 class BoundControlBox(wx.Panel):
     """ A static box with a couple of radio buttons and a text
@@ -121,12 +205,13 @@ class GraphFrame(wx.Frame):
         wx.Frame.__init__(self, None, -1, self.title)
         
         self.datagen = DataGen()
-        self.data = [self.datagen.next(0)]
-        self.dataFreq = [self.datagen.next(100)]
-        self.dataSlip = [self.datagen.next(100)]
+        self.data = [0]
+        self.dataFreq = [0]
+        self.dataSlip = [100]
+        self.dataSpeed = [0]
         self.paused = False
         
-        self.load = 0
+        self.dataLoad = [0]
         self.frequency = 0
         self.slip = 1.0
         
@@ -167,11 +252,16 @@ class GraphFrame(wx.Frame):
         self.pause_button = wx.Button(self.panel, -1, "Pause")
         self.Bind(wx.EVT_BUTTON, self.on_pause_button, self.pause_button)
         self.Bind(wx.EVT_UPDATE_UI, self.on_update_pause_button, self.pause_button)
+
+        self.reset_button = wx.Button(self.panel, -1, "Reset")
+        self.Bind(wx.EVT_BUTTON, self.on_reset_button, self.reset_button)
         
+        self.speedLabel = wx.StaticText(self.panel, -1, "Speed:")
+        self.speedText = wx.TextCtrl(self.panel, -1, "0", size=(100, -1))
         self.freqLabel = wx.StaticText(self.panel, -1, "Frequency:")
-        self.freqText = wx.TextCtrl(self.panel, -1, "80", size=(200, -1))
+        self.freqText = wx.TextCtrl(self.panel, -1, "0", size=(100, -1))
         self.slipLabel = wx.StaticText(self.panel, -1, "Slip:")
-        self.slipText = wx.TextCtrl(self.panel, -1, "100", size=(200, -1))
+        self.slipText = wx.TextCtrl(self.panel, -1, "100", size=(100, -1))
         
         self.sliderLabel = wx.StaticText(self.panel, -1, "Load", style=wx.ALIGN_CENTRE)
         self.slider = wx.Slider(self.panel, -1, 0, 0, 100, size=(200, -1), name="Load")
@@ -198,30 +288,33 @@ class GraphFrame(wx.Frame):
         self.hbox1.Add(self.cb_xlab, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         
         self.hbox2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox2.Add(self.xmin_control, border=5, flag=wx.ALL)
-        self.hbox2.Add(self.xmax_control, border=5, flag=wx.ALL)
+        self.hbox2.Add(self.xmin_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox2.Add(self.xmax_control, border=5, flag=wx.ALL | wx.EXPAND)
         self.hbox2.AddSpacer(24)
-        self.hbox2.Add(self.ymin_control, border=5, flag=wx.ALL)
-        self.hbox2.Add(self.ymax_control, border=5, flag=wx.ALL)
+        self.hbox2.Add(self.ymin_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox2.Add(self.ymax_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox2.Add(self.reset_button, border=5, flag=wx.ALL | wx.EXPAND)
         
         self.hbox3 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox3.Add(self.freqLabel, border=5, flag=wx.ALL)
-        self.hbox3.Add(self.freqText, border=5, flag=wx.ALL)
-        self.hbox3.Add(self.slipLabel, border=5, flag=wx.ALL)
-        self.hbox3.Add(self.slipText, border=5, flag=wx.ALL)
-        self.hbox3.Add(self.sliderLabel, border=5, flag=wx.ALL)
-        self.hbox3.Add(self.slider, border=5, flag=wx.ALL)
+        self.hbox3.Add(self.speedLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.speedText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.freqLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.freqText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.slipLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.slipText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.sliderLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.slider, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
         
         self.hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox4.Add(self.canvasFreq, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
-        self.hbox4.Add(self.canvasSlip, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
-        self.hbox4.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
+        self.hbox4.Add(self.canvasFreq, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox4.Add(self.canvasSlip, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox4.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
         
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         #~ self.vbox.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
         self.vbox.Add(self.hbox4, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
-        self.vbox.Add(self.hbox3, flag=wx.ALIGN_RIGHT | wx.TOP | wx.LEFT, border=5)        
+        self.vbox.Add(self.hbox3, flag=wx.ALIGN_LEFT | wx.EXPAND, border=5)        
         self.vbox.Add(self.hbox1, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         self.vbox.Add(self.hbox2, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         
@@ -297,7 +390,7 @@ class GraphFrame(wx.Frame):
         # xmax.
         #
         if self.xmax_control.is_auto():
-            xmax = len(self.data) if len(self.data) > 50 else 50
+            xmax = len(self.dataLoad) if len(self.dataLoad) > 50 else 50
             xmaxFreq = len(self.dataFreq) if len(self.dataFreq) > 50 else 50
             xmaxSlip = len(self.dataSlip) if len(self.dataSlip) > 50 else 50
         else:
@@ -322,7 +415,7 @@ class GraphFrame(wx.Frame):
         # the whole data set.
         # 
         if self.ymin_control.is_auto():
-            ymin = round(min(self.data), 0) - 1
+            ymin = round(min(self.dataLoad), 0) - 1
             yminFreq = round(min(self.dataFreq), 0) - 1
             yminSlip = round(min(self.dataSlip), 0) - 1
         else:
@@ -331,7 +424,7 @@ class GraphFrame(wx.Frame):
             yminSlip = int(self.ymin_control.manual_value())
         
         if self.ymax_control.is_auto():
-            ymax = round(max(self.data), 0) + 1
+            ymax = round(max(self.dataLoad), 0) + 1
             ymaxFreq = round(max(self.dataFreq), 0) + 1
             ymaxSlip = round(max(self.dataSlip), 0) + 1
         else:
@@ -369,8 +462,8 @@ class GraphFrame(wx.Frame):
         pylab.setp(self.axes.get_xticklabels(), 
             visible=self.cb_xlab.IsChecked())
         
-        self.plot_data.set_xdata(np.arange(len(self.data)))
-        self.plot_data.set_ydata(np.array(self.data))
+        self.plot_data.set_xdata(np.arange(len(self.dataLoad)))
+        self.plot_data.set_ydata(np.array(self.dataLoad))
         
         self.canvas.draw()
 
@@ -391,11 +484,27 @@ class GraphFrame(wx.Frame):
     def on_pause_button(self, event):
         self.paused = not self.paused
 
+    def on_reset_button(self, event):
+        self.data.append(0)
+        self.dataFreq.append(0)
+        self.dataSlip.append(100)        
+        self.dataSpeed.append(0)
+        self.freqText.SetValue(str(0))
+        self.slipText.SetValue(str(100))
+        self.speedText.SetValue(str(0))
+        self.slider.SetValue(0)
+        self.dataLoad.append(0)
+        self.datagen.rpm = 0
+        self.datagen.stable = True
+        self.datagen.load = 0
+        self.datagen.freq = 0
+        self.datagen.slip = 100
+        self.datagen.speed = 0
+                        
+
     def on_slider(self, event):
-        self.load = self.slider.GetValue()
-        self.freqText.SetValue(str(self.dataFreq[-1]))
-        self.slipText.SetValue(str(self.dataSlip[-1]))
-        #~ print(str(self.load))
+        #~ self.dataLoad.append(self.slider.GetValue())
+        self.datagen.next(self.slider.GetValue(), self.dataLoad[-1])
     
     def on_update_pause_button(self, event):
         label = "Resume" if self.paused else "Pause"
@@ -428,9 +537,15 @@ class GraphFrame(wx.Frame):
         # (to respond to scale modifications, grid change, etc.)
         #
         if not self.paused:
-            self.data.append(self.datagen.next(self.slider.GetValue()))
-            self.dataFreq.append(self.datagen.nextFreq(float(self.freqText.GetValue())))
-            self.dataSlip.append(self.datagen.nextSlip(float(self.slipText.GetValue())))
+            self.datagen.next(self.slider.GetValue(), self.dataLoad[-1])
+            self.dataLoad.append(self.datagen.load)
+            self.dataFreq.append(self.datagen.freq)
+            self.dataSlip.append(self.datagen.slip)
+            self.dataSpeed.append(self.datagen.speed)
+            
+            self.freqText.SetValue(str(self.dataFreq[-1]))
+            self.slipText.SetValue(str(self.dataSlip[-1]))
+            self.speedText.SetValue(str(self.dataSpeed[-1]))
         
         self.draw_plot()
     
