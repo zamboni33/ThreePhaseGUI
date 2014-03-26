@@ -1,0 +1,42 @@
+fix build on hurd
+
+--- wx.orig/build/aclocal/bakefile.m4	2013-06-05 22:32:00.260042986 +1200
++++ wx/build/aclocal/bakefile.m4	2013-06-05 22:32:06.276043007 +1200
+@@ -443,7 +443,7 @@
+       ;;
+ 
+       powerpc-apple-macos* | \
+-      *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | *-*-k*bsd*-gnu | \
++      *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | *-*-gnu* | *-*-k*bsd*-gnu | \
+       *-*-mirbsd* | \
+       *-*-sunos4* | \
+       *-*-osf* | \
+@@ -495,7 +495,7 @@
+ 
+     case "${BAKEFILE_HOST}" in
+       *-*-linux* | *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | \
+-      *-*-k*bsd*-gnu | *-*-mirbsd* )
++      *-*-k*bsd*-gnu | *-*-mirbsd* | *-*-gnu* )
+         if test "x$SUNCXX" = "xyes"; then
+             SONAME_FLAG="-h "
+         else
+--- wx.orig/configure	2013-06-05 22:32:00.260042986 +1200
++++ wx/configure	2013-06-05 22:32:06.296043007 +1200
+@@ -49131,7 +49131,7 @@
+       ;;
+ 
+       powerpc-apple-macos* | \
+-      *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | *-*-k*bsd*-gnu | \
++      *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | *-*-gnu* | *-*-k*bsd*-gnu | \
+       *-*-mirbsd* | \
+       *-*-sunos4* | \
+       *-*-osf* | \
+@@ -49175,7 +49175,7 @@
+ 
+     case "${BAKEFILE_HOST}" in
+       *-*-linux* | *-*-freebsd* | *-*-openbsd* | *-*-netbsd* | \
+-      *-*-k*bsd*-gnu | *-*-mirbsd* )
++      *-*-k*bsd*-gnu | *-*-mirbsd* | *-*-gnu* )
+         if test "x$SUNCXX" = "xyes"; then
+             SONAME_FLAG="-h "
+         else

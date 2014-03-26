@@ -1,0 +1,9 @@
+1N6263||#DIOD04=2||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+6N135||#DIP=8||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+Capacitor||#C=2||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=||@Value=
+Inductor||#DIP=2||@Value=10uH||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+Jumper4||#SIP=4||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=||#SLM-4=4||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+Jumper6||#SIP=6||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=||#SLM-4=4||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+PhoenixConnector_2pin||#DSC=2||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+PhoenixConnector_3pin||#DSC=3||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
+PhoenixConnector_3pin_3phase||#DSC=3||@Manufacturer=||@Manufacturer Part Number=||@Distributor=||@Distributor Part Number=
