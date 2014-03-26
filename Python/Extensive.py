@@ -51,103 +51,73 @@ class DataGen(object):
         self.freq = 0
         self.slip = 100
         self.speed = 0
-        self.up = True
+        self.direction = 0
         
     def next(self, newLoad, oldLoad):
+        self.load = newLoad
+        # Which direciton should frequency head?
+        if (newLoad - oldLoad) > 0:
+            self.direction = 1
+            #~ print ("Direction 1")
+        elif (newLoad - oldLoad) < 0:
+            self.direction = -1
+            #~ print ("Direction -1")
+        else:
+            self.direction = 0
+            #~ print ("Direction 0")
+        
         if newLoad == 0:
             # Reset the system
             self.load = newLoad
             self.freq = 0
             self.slip = 100
             self.speed = 0
+            
+        elif self.direction == 1:
+			# Frequency Increase
+			self.freq += 2
+			desiredFreq = (newLoad * 0.6) + 20
+			self.rpm = ((120.0 * desiredFreq) / 3.0)
+			self.speed = ((120.0 * self.freq) / 3.0)
+			self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+			if self.slip < 15:
+				self.stable = True
+			else:
+				self.stable = False
+			
+        elif self.direction == -1:
+			# Frequency Decrease
+			self.freq -= 2
+			desiredFreq = (newLoad * 0.6) + 20
+			self.rpm = ((120.0 * desiredFreq) / 3.0)
+			self.speed = ((120.0 * self.freq) / 3.0)
+			self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+			if self.slip < 15:
+				self.stable = True
+			else:
+				self.stable = False
+							
         else:
-            self.load = newLoad
-            if (newLoad - oldLoad) > 0 and self.freq < 80:
-                # Monitor Slip
-                self.up = True
-                self.freq += 2
+			# Check for stability
+            if self.stable == False:
                 desiredFreq = (newLoad * 0.6) + 20
                 self.rpm = ((120.0 * desiredFreq) / 3.0)
                 self.speed = ((120.0 * self.freq) / 3.0)
-                self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
-                if self.slip < 0:
-                    self.slip = 0
-                if self.slip < 5:
-                    self.stable = True
+                if (self.rpm - self.speed) > 0:
+					self.freq += 2
+					self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+					if self.slip < 15:
+						self.stable = True
+					else:
+						self.stable = False
                 else:
-                    self.stable = False
-            
-            elif (newLoad - oldLoad) < 0 and self.freq < 80:
-                self.up = False
-                self.freq -= 2
-                desiredFreq = (newLoad * 0.6) + 20
-                self.rpm = ((120.0 * desiredFreq) / 3.0)
-                self.speed = ((120.0 * self.freq) / 3.0)
-                self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
-                if self.slip < 0:
-                    self.slip = 0
-                if self.slip < 5:
-                    self.stable = True
-                else:
-                    self.stable = False                
-            
-            else:
-               if self.stable == False:
-                    # Monitor Slip
-                    if self.up == True:
-                        self.freq += 2
-                        desiredFreq = (newLoad * 0.6) + 20
-                        self.rpm = ((120.0 * desiredFreq) / 3.0)
-                        self.speed = ((120.0 * self.freq) / 3.0)
-                        self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
-                        if self.slip < 0:
-                            self.slip = 0                    
-                        if self.slip < 5:
-                            self.stable = True
-                        else:
-                            self.stable = False
-                    else:
-                        self.freq += 2
-                        desiredFreq = (newLoad * 0.6) + 20
-                        self.rpm = ((120.0 * desiredFreq) / 3.0)
-                        self.speed = ((120.0 * self.freq) / 3.0)
-                        self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
-                        if self.slip < 0:
-                            self.slip = 0                    
-                        if self.slip < 5:
-                            self.stable = True
-                        else:
-                            self.stable = False                        
+					self.freq -= 2
+					self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+					if self.slip < 15:
+						self.stable = True
+					else:
+						self.stable = False                     
                     
-                
-        
-    
-    #~ def nextFreq(self, slipValue, currentSpeed, freqValue, loadValue):
-        #~ if slipValue > 5 and self.deltaSlip > 1.0:
-            #~ if freqValue > 200:
-                #~ freqValue = 200
-            #~ else:
-                #~ freqValue += 2        
-        #~ return freqValue
-        #~ 
-    #~ def nextSlip(self, slipValue, currentSpeed, freqValue, loadValue):
-        #~ if loadValue == 0:
-            #~ slipValue = 100
-        #~ else:
-            #~ self.rpm = (120.0 * freqValue) / 3.0
-            #~ temp = slipValue
-            #~ slipValue = ((self.rpm - currentSpeed) / self.rpm ) * 100
-            #~ self.deltaSlip = abs(temp - slipValue)
-        #~ return slipValue
-#~ 
-    #~ def nextSpeed(self, slipValue, currentSpeed, freqValue, loadValue):
-        #~ if loadValue == 0:
-            #~ currentSpeed = (((120.0 * freqValue) / 3.0) * 0.95)
-        #~ else:
-            #~ currentSpeed = (((120.0 * freqValue) / 3.0) * 0.95)
-            #~ currentSpeed -= (currentSpeed * 0.10) * (1 - (loadValue / 100))
-        #~ return currentSpeed
-
 class BoundControlBox(wx.Panel):
     """ A static box with a couple of radio buttons and a text
         box. Allows to switch between an automatic mode and a 
@@ -390,18 +360,18 @@ class GraphFrame(wx.Frame):
         # xmax.
         #
         if self.xmax_control.is_auto():
-            xmax = len(self.dataLoad) if len(self.dataLoad) > 50 else 50
-            xmaxFreq = len(self.dataFreq) if len(self.dataFreq) > 50 else 50
-            xmaxSlip = len(self.dataSlip) if len(self.dataSlip) > 50 else 50
+            xmax = len(self.dataLoad) if len(self.dataLoad) > 50 else 100
+            xmaxFreq = len(self.dataFreq) if len(self.dataFreq) > 50 else 100
+            xmaxSlip = len(self.dataSlip) if len(self.dataSlip) > 50 else 100
         else:
             xmax = int(self.xmax_control.manual_value())
             xmaxFreq = int(self.xmax_control.manual_value())
             xmaxSlip = int(self.xmax_control.manual_value())
             
         if self.xmin_control.is_auto():            
-            xmin = xmax - 50
-            xminFreq = xmaxFreq - 50
-            xminSlip = xmaxSlip - 50
+            xmin = xmax - 100
+            xminFreq = xmaxFreq - 100
+            xminSlip = xmaxSlip - 100
         else:
             xmin = int(self.xmin_control.manual_value())
             xminFreq = int(self.xmin_control.manual_value())
@@ -424,9 +394,9 @@ class GraphFrame(wx.Frame):
             yminSlip = int(self.ymin_control.manual_value())
         
         if self.ymax_control.is_auto():
-            ymax = round(max(self.dataLoad), 0) + 1
-            ymaxFreq = round(max(self.dataFreq), 0) + 1
-            ymaxSlip = round(max(self.dataSlip), 0) + 1
+            ymax = 100
+            ymaxFreq = 100
+            ymaxSlip = 100
         else:
             ymax = int(self.ymax_control.manual_value())
             ymaxFreq = int(self.ymax_control.manual_value())
@@ -537,7 +507,9 @@ class GraphFrame(wx.Frame):
         # (to respond to scale modifications, grid change, etc.)
         #
         if not self.paused:
+            #~ print ("Updating with " + str(self.slider.GetValue()) + " " + str(self.dataLoad[-1]))
             self.datagen.next(self.slider.GetValue(), self.dataLoad[-1])
+            #~ print(str(self.datagen.load))
             self.dataLoad.append(self.datagen.load)
             self.dataFreq.append(self.datagen.freq)
             self.dataSlip.append(self.datagen.slip)
