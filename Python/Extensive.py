@@ -39,8 +39,7 @@ import pylab
 
 
 class DataGen(object):
-    """ A silly class that generates pseudo-random data for
-        display in the plot.
+    """ The beginnings of a motor simulator.
     """
     def __init__(self, init=50):
 
@@ -54,69 +53,94 @@ class DataGen(object):
         self.direction = 0
         
     def next(self, newLoad, oldLoad):
-        self.load = newLoad
-        # Which direciton should frequency head?
-        if (newLoad - oldLoad) > 0:
-            self.direction = 1
-            #~ print ("Direction 1")
-        elif (newLoad - oldLoad) < 0:
-            self.direction = -1
-            #~ print ("Direction -1")
-        else:
-            self.direction = 0
-            #~ print ("Direction 0")
-        
-        if newLoad == 0:
-            # Reset the system
-            self.load = newLoad
-            self.freq = 0
-            self.slip = 100
-            self.speed = 0
-            
-        elif self.direction == 1:
-			# Frequency Increase
-			self.freq += 2
-			desiredFreq = (newLoad * 0.6) + 20
-			self.rpm = ((120.0 * desiredFreq) / 3.0)
-			self.speed = ((120.0 * self.freq) / 3.0)
-			self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
-			if self.slip < 15:
-				self.stable = True
+		if app.frame.fileText.GetValue() != "":
+			print ("Ready for File: " + app.frame.fileText.GetValue())
+			# Update self.load
+			# Update self.freq
+			# Update self.slip
+			# Update self.speed
+			# Pass all params into all of them
+		else:
+			self.load = newLoad
+			# Which direciton should frequency head?
+			if (newLoad - oldLoad) > 0:
+				self.direction = 1
+				#~ print ("Direction 1")
+			elif (newLoad - oldLoad) < 0:
+				self.direction = -1
+				#~ print ("Direction -1")
 			else:
-				self.stable = False
+				self.direction = 0
+				#~ print ("Direction 0")
 			
-        elif self.direction == -1:
-			# Frequency Decrease
-			self.freq -= 2
-			desiredFreq = (newLoad * 0.6) + 20
-			self.rpm = ((120.0 * desiredFreq) / 3.0)
-			self.speed = ((120.0 * self.freq) / 3.0)
-			self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
-			if self.slip < 15:
-				self.stable = True
-			else:
-				self.stable = False
+			if newLoad == 0:
+				# Reset the system
+				self.load = newLoad
+				self.freq = 0
+				self.slip = 100
+				self.speed = 0
+				
+			elif self.direction == 1:
+				# Frequency Increase
+				self.freq += 2
+				desiredFreq = (newLoad * 0.6) + 20
+				self.rpm = ((120.0 * desiredFreq) / 3.0)
+				self.speed = ((120.0 * self.freq) / 3.0)
+				self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+				if self.slip < 15:
+					self.stable = True
+				else:
+					self.stable = False
+				
+			elif self.direction == -1:
+				# Frequency Decrease
+				self.freq -= 2
+				desiredFreq = (newLoad * 0.6) + 20
+				self.rpm = ((120.0 * desiredFreq) / 3.0)
+				self.speed = ((120.0 * self.freq) / 3.0)
+				self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+				if self.slip < 15:
+					self.stable = True
+				else:
+					self.stable = False
 							
-        else:
-			# Check for stability
-            if self.stable == False:
-                desiredFreq = (newLoad * 0.6) + 20
-                self.rpm = ((120.0 * desiredFreq) / 3.0)
-                self.speed = ((120.0 * self.freq) / 3.0)
-                if (self.rpm - self.speed) > 0:
-					self.freq += 2
-					self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
-					if self.slip < 15:
-						self.stable = True
+			else:
+				# Check for stability
+				if self.stable == False:
+					desiredFreq = (newLoad * 0.6) + 20
+					self.rpm = ((120.0 * desiredFreq) / 3.0)
+					self.speed = ((120.0 * self.freq) / 3.0)
+					if (self.rpm - self.speed) > 0:
+						self.freq += 2
+						self.slip = (abs(self.rpm - self.speed) / self.rpm ) * 100
+						if self.slip < 15:
+							self.stable = True
+						else:
+							self.stable = False
 					else:
-						self.stable = False
-                else:
-					self.freq -= 2
-					self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
-					if self.slip < 15:
-						self.stable = True
-					else:
-						self.stable = False                     
+						self.freq -= 2
+						self.slip = (abs(self.speed - self.rpm) / self.speed ) * 100
+						if self.slip < 15:
+							self.stable = True
+						else:
+							self.stable = False
+							
+						
+class TabPanel(wx.Panel):
+  
+  def __init__(self, parent):
+  
+	  wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+	  
+	  sizer = wx.BoxSizer(wx.VERTICAL)
+	  txtOne = wx.TextCtrl(self, wx.ID_ANY, "")
+	  txtTwo = wx.TextCtrl(self, wx.ID_ANY, "")
+	  
+	  sizer = wx.BoxSizer(wx.VERTICAL)
+	  sizer.Add(txtOne, 0, wx.ALL, 5)
+	  sizer.Add(txtTwo, 0, wx.ALL, 5)
+	  
+	  self.SetSizer(sizer)                     
                     
 class BoundControlBox(wx.Panel):
     """ A static box with a couple of radio buttons and a text
@@ -165,6 +189,21 @@ class BoundControlBox(wx.Panel):
     def manual_value(self):
         return self.value
 
+class PageOne(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        #~ t = wx.StaticText(self, -1, "This is a PageOne object", (20,20))
+
+class PageTwo(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        #~ t = wx.StaticText(self, -1, "This is a PageTwo object", (40,40))
+
+class PageThree(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        #~ t = wx.StaticText(self, -1, "This is a PageThree object", (60,60))
+
 
 class GraphFrame(wx.Frame):
     """ The main frame of the application
@@ -172,14 +211,14 @@ class GraphFrame(wx.Frame):
     title = 'Demo: dynamic matplotlib graph'
     
     def __init__(self):
-        wx.Frame.__init__(self, None, -1, self.title)
+        wx.Frame.__init__(self, None, -1, self.title, size=(500, 500))
         
         self.datagen = DataGen()
         self.data = [0]
         self.dataFreq = [0]
         self.dataSlip = [100]
         self.dataSpeed = [0]
-        self.paused = False
+        self.paused = True
         
         self.dataLoad = [0]
         self.frequency = 0
@@ -207,89 +246,126 @@ class GraphFrame(wx.Frame):
         self.SetMenuBar(self.menubar)
 
     def create_main_panel(self):
+        
         self.panel = wx.Panel(self)
+        self.nb = wx.Notebook(self.panel)        
+
+        # create the page windows as children of the notebook
+        page1 = PageOne(self.nb)
+        page2 = PageTwo(self.nb)
+        page3 = PageThree(self.nb)
+
+        # add the pages to the notebook with the label to show on the tab
+        self.nb.AddPage(page1, "Solar Panel")
+        self.nb.AddPage(page2, "Motor Output")
+        self.nb.AddPage(page3, "PWM")
+        
+# ---------------------- Creating First Tab -------------------------- #        
+
+# -------------------------------------------------------------------- #
+
+# ---------------------- Creating Second Tab ------------------------- #
 
         self.init_plot()
-        self.canvas = FigCanvas(self.panel, -1, self.fig)
-        self.canvasSlip = FigCanvas(self.panel, -1, self.figSlip)
-        self.canvasFreq = FigCanvas(self.panel, -1, self.figFreq)
+        self.canvas = FigCanvas(page2, -1, self.fig)
+        self.canvasSlip = FigCanvas(page2, -1, self.figSlip)
+        self.canvasFreq = FigCanvas(page2, -1, self.figFreq)
 
-        self.xmin_control = BoundControlBox(self.panel, -1, "X min", 0)
-        self.xmax_control = BoundControlBox(self.panel, -1, "X max", 50)
-        self.ymin_control = BoundControlBox(self.panel, -1, "Y min", 0)
-        self.ymax_control = BoundControlBox(self.panel, -1, "Y max", 100)
+        self.xmin_control = BoundControlBox(page2, -1, "X min", 0)
+        self.xmax_control = BoundControlBox(page2, -1, "X max", 50)
+        self.ymin_control = BoundControlBox(page2, -1, "Y min", 0)
+        self.ymax_control = BoundControlBox(page2, -1, "Y max", 100)
         
-        self.pause_button = wx.Button(self.panel, -1, "Pause")
+        self.pause_button = wx.Button(page2, -1, "Pause")
         self.Bind(wx.EVT_BUTTON, self.on_pause_button, self.pause_button)
         self.Bind(wx.EVT_UPDATE_UI, self.on_update_pause_button, self.pause_button)
 
-        self.reset_button = wx.Button(self.panel, -1, "Reset")
+        self.reset_button = wx.Button(page2, -1, "Reset")
         self.Bind(wx.EVT_BUTTON, self.on_reset_button, self.reset_button)
         
-        self.speedLabel = wx.StaticText(self.panel, -1, "Speed:")
-        self.speedText = wx.TextCtrl(self.panel, -1, "0", size=(100, -1))
-        self.freqLabel = wx.StaticText(self.panel, -1, "Frequency:")
-        self.freqText = wx.TextCtrl(self.panel, -1, "0", size=(100, -1))
-        self.slipLabel = wx.StaticText(self.panel, -1, "Slip:")
-        self.slipText = wx.TextCtrl(self.panel, -1, "100", size=(100, -1))
+        self.speedLabel = wx.StaticText(page2, -1, "Speed:")
+        self.speedText = wx.TextCtrl(page2, -1, "0", size=(100, -1))
+        self.freqLabel = wx.StaticText(page2, -1, "Frequency:")
+        self.freqText = wx.TextCtrl(page2, -1, "0", size=(100, -1))
+        self.slipLabel = wx.StaticText(page2, -1, "Slip:")
+        self.slipText = wx.TextCtrl(page2, -1, "100", size=(100, -1))
         
-        self.sliderLabel = wx.StaticText(self.panel, -1, "Load", style=wx.ALIGN_CENTRE)
-        self.slider = wx.Slider(self.panel, -1, 0, 0, 100, size=(200, -1), name="Load")
+        self.sliderLabel = wx.StaticText(page2, -1, "Load", style=wx.ALIGN_CENTRE)
+        self.slider = wx.Slider(page2, -1, 0, 0, 100, size=(200, -1), name="Load")
         
         self.Bind(wx.EVT_SLIDER, self.on_slider, self.slider)
         
-        self.cb_grid = wx.CheckBox(self.panel, -1, 
+        self.cb_grid = wx.CheckBox(page2, -1, 
             "Show Grid",
             style=wx.ALIGN_RIGHT)
         self.Bind(wx.EVT_CHECKBOX, self.on_cb_grid, self.cb_grid)
         self.cb_grid.SetValue(True)
         
-        self.cb_xlab = wx.CheckBox(self.panel, -1, 
+        self.cb_xlab = wx.CheckBox(page2, -1, 
             "Show X labels",
             style=wx.ALIGN_RIGHT)
         self.Bind(wx.EVT_CHECKBOX, self.on_cb_xlab, self.cb_xlab)        
         self.cb_xlab.SetValue(True)
         
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox1.Add(self.pause_button, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
-        self.hbox1.AddSpacer(20)
-        self.hbox1.Add(self.cb_grid, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
-        self.hbox1.AddSpacer(10)
-        self.hbox1.Add(self.cb_xlab, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        self.hbox1.Add(self.canvasFreq, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox1.Add(self.canvasSlip, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox1.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
         
         self.hbox2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox2.Add(self.xmin_control, border=5, flag=wx.ALL | wx.EXPAND)
-        self.hbox2.Add(self.xmax_control, border=5, flag=wx.ALL | wx.EXPAND)
-        self.hbox2.AddSpacer(24)
-        self.hbox2.Add(self.ymin_control, border=5, flag=wx.ALL | wx.EXPAND)
-        self.hbox2.Add(self.ymax_control, border=5, flag=wx.ALL | wx.EXPAND)
-        self.hbox2.Add(self.reset_button, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox2.Add(self.speedLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.speedText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.freqLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.freqText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.slipLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.slipText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.sliderLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox2.Add(self.slider, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)                
         
         self.hbox3 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox3.Add(self.speedLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.speedText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.freqLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.freqText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.slipLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.slipText, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.sliderLabel, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox3.Add(self.slider, border=5, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox3.Add(self.pause_button, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        self.hbox3.AddSpacer(20)
+        self.hbox3.Add(self.cb_grid, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        self.hbox3.AddSpacer(10)
+        self.hbox3.Add(self.cb_xlab, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        self.choose_motor_file_button = wx.Button(page2, -1, "Choose File")
+        self.Bind(wx.EVT_BUTTON, self.on_choose_motor_file_button, self.choose_motor_file_button)
+        self.fileText = wx.TextCtrl(page2, -1, "", size=(400, -1))
+        self.hbox3.Add(self.fileText, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        self.hbox3.Add(self.choose_motor_file_button, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         
         self.hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        self.hbox4.Add(self.canvasFreq, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox4.Add(self.canvasSlip, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
-        self.hbox4.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.EXPAND)
+        self.hbox4.Add(self.xmin_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox4.Add(self.xmax_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox4.AddSpacer(24)
+        self.hbox4.Add(self.ymin_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox4.Add(self.ymax_control, border=5, flag=wx.ALL | wx.EXPAND)
+        self.hbox4.Add(self.reset_button, border=5, flag=wx.ALL | wx.EXPAND)
+        
+        self.hbox5 = wx.BoxSizer(wx.HORIZONTAL)
+        self.hbox5.AddSpacer(20)
         
         self.vbox = wx.BoxSizer(wx.VERTICAL)
-        #~ self.vbox.Add(self.canvas, 1, flag=wx.LEFT | wx.TOP | wx.GROW)
-        self.vbox.Add(self.hbox4, 0, flag=wx.ALIGN_LEFT | wx.TOP)
-
-        self.vbox.Add(self.hbox3, flag=wx.ALIGN_LEFT | wx.EXPAND, border=5)        
         self.vbox.Add(self.hbox1, 0, flag=wx.ALIGN_LEFT | wx.TOP)
-        self.vbox.Add(self.hbox2, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        self.vbox.Add(self.hbox2, 0, flag=wx.ALIGN_LEFT | wx.EXPAND, border=5)        
+        self.vbox.Add(self.hbox3, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        self.vbox.Add(self.hbox4, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        self.vbox.Add(self.hbox5, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        self.vbox.Add(self.hbox5, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         
-        self.panel.SetSizer(self.vbox)
         self.vbox.Fit(self)
+        #~ self.vbox.Add(self.nb, 1, wx.EXPAND)
+        page2.SetSizer(self.vbox)
+        
+# -------------------------------------------------------------------- #
+
+# ---------------------- Creating Third Tab -------------------------- #        
+
+# -------------------------------------------------------------------- #
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.nb, 1, wx.EXPAND)
+        self.panel.SetSizer(sizer)
     
     def create_status_bar(self):
         self.statusbar = self.CreateStatusBar()
@@ -470,6 +546,13 @@ class GraphFrame(wx.Frame):
         self.datagen.freq = 0
         self.datagen.slip = 100
         self.datagen.speed = 0
+        
+    def on_choose_motor_file_button(self, event):
+		self.dlg = wx.FileDialog(self, "Open a file", defaultDir=os.getcwd(), defaultFile="", style=wx.OPEN)
+		if self.dlg.ShowModal() == wx.ID_OK:
+			filename = self.dlg.GetPath()
+			self.fileText.SetValue(str(filename))
+			self.dlg.Destroy()
                         
 
     def on_slider(self, event):
